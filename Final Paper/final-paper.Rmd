@@ -1,0 +1,251 @@
+---
+title: "Do Homeowners Value Air Quality: Evidence From Wildfire Smoke"
+author: "Tristan Misko"
+date: "1 December 2021"
+output: pdf_document
+header-includes:
+    - \usepackage{setspace}\doublespacing
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(stargazer)
+library(biglm)
+library(usmap)
+```
+
+```{r}
+#import data
+main <- read.csv("/Users/tristanmisko/Documents/Berkeley/ECON/191/2021/Data/Clean\ Data/main.csv", colClasses = c("fips"="character"))
+# function which record treatment status based on the smoke score differential
+set.status <- Vectorize(function(value, control.threshold, treatment.threshold){
+    if (abs(value) < control.threshold){
+        return("control")
+    } else if (value > treatment.threshold){
+        return("positive treatment")
+    } else if (value < -treatment.threshold){
+        return("negative treatment")
+    } else {
+        return("boundary")
+    }
+}, "value")
+
+# perform the analysis for t* = 55
+main$period <- as.factor(main$period)
+data.pch43 <- select(main, -c(1:3,25:40))
+data.pch48 <- select(main, -c(1:3,21:24,29:40))
+data.pch55 <- select(main, -c(1:3,21:28,33:40))
+data.pch60 <- select(main, -c(1:3,21:32,37:40))
+data.pch67 <- select(main, -c(1:3,21:36))
+
+data.pch55$period <- as.factor(data.pch55$period)
+
+# get status at different threshold values
+data.pch43$status.k5.t25 <- as.factor(set.status(data.pch43$m.s.pch43, 0.05, 0.25))
+data.pch43$status.k5.t50 <- as.factor(set.status(data.pch43$m.s.pch43, 0.05, 0.50))
+data.pch43$status.k10.t25 <- as.factor(set.status(data.pch43$m.s.pch43, 0.10, 0.25))
+data.pch43$status.k10.t50 <- as.factor(set.status(data.pch43$m.s.pch43, 0.10, 0.50))
+
+data.pch48$status.k5.t25 <- as.factor(set.status(data.pch48$m.s.pch48, 0.05, 0.25))
+data.pch48$status.k5.t50 <- as.factor(set.status(data.pch48$m.s.pch48, 0.05, 0.50))
+data.pch48$status.k10.t25 <- as.factor(set.status(data.pch48$m.s.pch48, 0.10, 0.25))
+data.pch48$status.k10.t50 <- as.factor(set.status(data.pch48$m.s.pch48, 0.10, 0.50))
+
+data.pch55$status.k5.t25 <- as.factor(set.status(data.pch55$m.s.pch55, 0.05, 0.25))
+data.pch55$status.k5.t50 <- as.factor(set.status(data.pch55$m.s.pch55, 0.05, 0.50))
+data.pch55$status.k10.t25 <- as.factor(set.status(data.pch55$m.s.pch55, 0.10, 0.25))
+data.pch55$status.k10.t50 <- as.factor(set.status(data.pch55$m.s.pch55, 0.10, 0.50))
+
+data.pch60$status.k5.t25 <- as.factor(set.status(data.pch60$m.s.pch60, 0.05, 0.25))
+data.pch60$status.k5.t50 <- as.factor(set.status(data.pch60$m.s.pch60, 0.05, 0.50))
+data.pch60$status.k10.t25 <- as.factor(set.status(data.pch60$m.s.pch60, 0.10, 0.25))
+data.pch60$status.k10.t50 <- as.factor(set.status(data.pch60$m.s.pch60, 0.10, 0.50))
+
+data.pch67$status.k5.t25 <- as.factor(set.status(data.pch67$m.s.pch67, 0.05, 0.25))
+data.pch67$status.k5.t50 <- as.factor(set.status(data.pch67$m.s.pch67, 0.05, 0.50))
+data.pch67$status.k10.t25 <- as.factor(set.status(data.pch67$m.s.pch67, 0.10, 0.25))
+data.pch67$status.k10.t50 <- as.factor(set.status(data.pch67$m.s.pch67, 0.10, 0.50))
+```
+
+
+```{r}
+sens.data.pch60 <- data.frame(upper = seq(0.10,0.75, by = 0.05))
+coef.vector <- c()
+thresholds.sens.pch60 <- data.frame(data.pch60)
+
+# 
+for (u in sens.data.pch60$upper){
+    print(u)
+    df <- cbind(thresholds.sens.pch60,
+                s = as.factor(set.status(thresholds.sens.pch60$m.s.pch60, 0.05, u)))
+    df <- filter(df, (s == "positive treatment") | (s == "control"))
+    df$treatment <- as.numeric(df$s == "positive treatment")*
+        as.numeric(df$post60)
+    reg.out <- biglm(data = df, 
+                     zhvi.score ~ treatment + unemp + period + fips)
+    coef.vector <- c(coef.vector, coef(reg.out)[2])
+}
+sens.data.pch60$coef <- coef.vector
+coef.vector
+
+```
+
+```{r}
+ggplot(data = sens.data.pch60, aes(x = upper, y = coef)) + geom_line() +
+    labs(title = "Sensitivity of Changes in Upper Threshold", 
+         subtitle = "The Estimate Reflects Significant Thresholding Behavior")
+```
+
+
+
+
+```{r, fig.width = 7, fig.height = 5}
+# tabulate and plot status by county
+plt.pch55.status <- data.pch55 %>% group_by(fips) %>% 
+                        summarize(status.k5.t25 = first(status.k5.t25),
+                                  status.k5.t50 = first(status.k5.t50),
+                                  status.k10.t25 = first(status.k10.t25),
+                                  status.k10.t50 = first(status.k10.t50))
+#plot map for kappa = 5, tau = 50
+plot_usmap("counties", data = plt.pch55.status, values = "status.k5.t50",
+           include = unique(plt.pch55.status$fips)) + 
+    labs(title = "Treatment Status by County",
+         subtitle = "Control Threshold = 5%, Treatment Threshold = 50%",
+         fill = "Treatment Status") +
+    theme(legend.position = "right")
+```
+
+# Methodology
+
+```{r}
+# regression!!!!
+#reg.pch55.ols <- biglm(data = data.pch55,
+                       #zhvi.score ~ n.score + unemp + period + fips)
+
+#data.pch55$treat.k5.t25 <- as.numeric(data.pch55$post55 & 
+                           #(data.pch55$status.k5.t25 == "positive treatment"))
+#data.pch55$treat.k5.t50 <- as.numeric(data.pch55$post55 & 
+#                           (data.pch55$status.k5.t50 == "positive treatment"))
+#data.pch55$treat.k10.t25 <- as.numeric(data.pch55$post55 & 
+#                            (data.pch55$status.k10.t25 == "positive treatment"))
+#data.pch55$treat.k10.t50 <- as.numeric(data.pch55$post55 & 
+                            #(data.pch55$status.k10.t50 == "positive treatment"))
+
+#data.pch55.k5.t25 <- filter(data.pch55,
+                            #status.k5.t25 %in% c("positive treatment", "control")) 
+#reg.pch55.k5.t25 <- biglm(data = data.pch55.k5.t25, 
+                          #zhvi.score ~ treat.k5.t25 + unemp + period + fips)
+data.pch55.k5.t50 <- filter(data.pch55, 
+                            status.k5.t50 %in% c("positive treatment", "control")) 
+#reg.pch55.k5.t50 <- biglm(data = data.pch55.k5.t50, 
+                          #zhvi.score ~ treat.k5.t50 + unemp + period + fips)
+#data.pch55.k10.t25 <- filter(data.pch55, 
+                            #status.k10.t25 %in% c("positive treatment", "control")) 
+#reg.pch55.k10.t25 <- biglm(data = data.pch55.k10.t25, 
+                          #zhvi.score ~ treat.k10.t25 + unemp + period + fips)
+#data.pch55.k10.t50 <- filter(data.pch55, 
+                            #status.k10.t50 %in% c("positive treatment", "control")) 
+#reg.pch55.k10.t50 <- biglm(data = data.pch55.k10.t50, 
+                          #zhvi.score ~ treat.k10.t50 + period + unemp + fips)
+```
+
+# Results
+
+We summarize the results of the two regressions above in Table 1.  
+
+\begin{table}[!htbp] \centering 
+  \caption{Effect of Wildfire Smoke on Housing Prices} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{6pt}}lcc} 
+\\\hline  \hline \\ 
+\\ & (1) & (2)\\ 
+\hline \\[-1.8ex] 
+ (Intercept) & 183687.00$^{***}$ & 73976.901 \\ 
+  & (1100.8998) & (1113.0914) \\ 
+  & & \\ 
+ n.score & $-$0.6631 &  \\ 
+  & (0.6412) &   \\ 
+  & &  \\ 
+ treat.k5.t50 & & $-$1484.0340$^{***}$  \\ 
+  & & (168.9167) \\ 
+  & & \\ 
+ unemp & 1114.7302$^{***}$ & 1563.9206$^{***}$  \\ 
+  & (27.7190) & (48.1914)  \\ 
+  & & \\ 
+ County Fixed Effects& Yes & Yes  \\ 
+  &  &    \\ 
+ Time Fixed Effects & Yes & Yes \\ 
+  &  &    \\ 
+ 
+\hline \\[-1.8ex] 
+Observations & 234600 & 45655 \\ 
+R$^{2}$ & 0.9804 & 0.98367 \\ 
+\hline 
+\hline \\[-1.8ex]  \\ 
+\end{tabular} 
+\end{table} 
+
+The coefficient from equation (1), the standard OLS equation, is not significantly
+different from zero.  Its interpretation is that a one point increase in the smoke
+score in a given month, roughly corresponding to a 1 $\mu g$ increase in wildfire
+smoke exposure over the course of the month, is associated with a $-0.6412$ drop
+in ZHVI.
+
+The coefficient on equation (2) is negative and highly significant.  Its 
+interpretation is that the ZHVI (roughly interpreted as the smoothed median
+home price in the county in dollars) is expected to fall by $1484.0340$ given
+a 50\% long term increase in wildfire smoke exposure.  Here, long term refers
+to the difference between the 2010-2014 and the 2015-2019 means.
+
+
+## Robustness Checks 
+
+Robustness checks will be a major feature of my paper because of the number of
+threshold choices I have had to make in the course of my analysis.
+
+\textbf{Parallel Trends:} We plot the mean ZHVI across the treatment and control 
+groups in each period and examine the evolution in time.  From the graph, it is
+visually clear that the trends in the means are close to parallel, and it seems
+that there is a small dip in the ZHVI for the treatment group after treatment. 
+
+```{r}
+# parallel trends plot 
+plt.means <- data.pch55.k5.t50 %>% group_by(status.k5.t50, period) %>% 
+    summarize(m.z = mean(zhvi.score))
+plt.means$period <- as.numeric(plt.means$period)
+
+parallel <- ggplot(NULL, aes(x = period, y = m.z)) + 
+    geom_vline(aes(xintercept = 55), linetype = "dashed") +
+    geom_line(data = filter(plt.means, status.k5.t50 == "positive treatment"),
+              aes(col = "treated")) +
+    geom_line(data = filter(plt.means, status.k5.t50 == "control"),
+              aes(col = "control")) +
+    xlab("Period") + ylab("Mean ZHVI") + 
+    labs(title = "Evolution of Mean ZHVI by Treatment Group", 
+         subtitle ="Trends Before Treatment")
+parallel  
+```
+
+\textbf{Effect Size Threshold for Treatment Status:} One major choice which will
+likely have significant bearing on the resultant regression coefficient is the treatment status.  Changing this threshold affects which counties are included in the 
+treatment and control groups.  To address robustness, I plan to produce a plot
+which varies the threshold continuously on the $x$ axis and plot the resultant regression coefficient on the $y$ axis.  Tbis plot will give visual insight 
+into the sensitivity of the effect size estimate to the threshold choice.
+
+\textbf{Treatment Start Time:} I will also run the models with different periods
+in which the treatment begins.
+
+
+
+
+
+## 
+
+The geographic clustering of treatment effects represents the most significant 
+threat to internal validity.  Because smoke density is a roughly continuous
+variable, the treatment status of neighboring counties is a strong predictor of
+the .  This threat is particularly salient for the simple treatment/control
+group model.  

@@ -1,0 +1,284 @@
+---
+title: "Model and Data"
+author: "Tristan Misko"
+date: "11/17/2021"
+output: 
+    pdf_document: default
+header-includes:
+    -\usepackage{setspace}\doublespacing
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(usmap)
+library(ggplot2)
+library(dplyr)
+library(gganimate)
+library(transformr)
+```
+
+
+
+# Model and Design
+\doublespacing
+The main idea of the paper is to determine whether housing prices respond to 
+changes to in air quality.  The naive regression of housing prices on air quality
+may suffer from significant endogeneity.  If people respond to air quality, then
+it is likely that taste-based sorting occurs, producing a selection bias.  
+
+To overcome endogeneity, we use wildfire smoke as an instrumental variable 
+for air quality to obtain plausibly exogenous variation, and we obtain causal 
+estimates by comparing places which receive increases in wildfire smoke over
+a given period to those which do not. 
+
+The main question, whether there is a response in housing prices to changes in
+air quality, leaves unspecified the timescale over which the response occurs. As
+such, I plan to look at both the monthly and the yearly timescales.  Do housing
+prices dip after a few months of relatively poor air quality?  A few years?
+
+# Description of Data
+
+## Summary of Data Structure
+The data take the form of panel data, with monthly obervations at the county level
+of the number of days in each month in which the county is covered by wildfire 
+smoke plumes, the mean air quality index (AQI) over the month, and the level of 
+the Zillow housing price index in that month.  I also have associated to each observation a set of controls for unemployment level and housing characteristics. 
+The data ranges from June 2010 to July 2019 and contains counties outside of the
+geographic west of the United States (such counties may suffer potentially
+significant confouding from wildfires themselves).  I am currently working on 
+expanding the smoke dataset to include all months in 2019 and 2020.  All other
+sources have data for those periods.  
+
+## Smoke Data
+
+The smoke data, in the form of dummies for exposure to light, medium, and heavy
+wildfire smoke, are reported by Vargo at the census block and daily level, so 
+both spatial and temporal aggregation was necessary in order to bring the data
+up to the county and monthly level.  A number of nontrivial decisions were 
+made in the aggregation process which require validation via robustness checks.  
+
+First, we grouped at the county level and computed a population-weighted 
+"dummy" which takes values on the interval [0,1] for smoke exposure in each of
+the three intensity categories within a county on a given day.  For example, a
+value of 0.5 for the `light` would indicate that 50% of the county's population
+was exposed to light wildfire smoke on a given day.
+
+We then aggregated to the monthly level by grouping observations by month and 
+summing the population weighted county level smoke exposure indicators to obtain
+a ``number'' of days of smoke exposure at the light, medium, and heavy levels. 
+This number is continuously valued because of the above weighting scheme but is
+bounded by the number of days in the month.
+
+Finally, we summarize across the light, medium, and heavy levels by computing 
+the variable `smoke_score`.  There is a fairly natural weighting scheme for 
+aggregation.  NOAA defines plumes with density 0-10 $\mu g/m^3$ as light,
+10-21 $\mu g/m^3$ as medium, and $>22\mu g/m^3$ as heavy, so computing the
+weighted sum `smoke_score = 5*light + 15*medium + 25*heavy` gives a 
+rough measure of the total density of smoke exposure over a given month for a
+given county.
+
+To ensure that such choices are empirically valid, extensive robustness testing including variation of all weighting schemes will be employed to ensure that 
+results do not depend too heavily on arbitrary decisions. 
+
+# Empirical Strategy
+
+## Basic Model
+
+A county is categorized as treated if its post-2014 mean smoke score
+produce a dummy which is one if wildfire smoke increased beyond a given threshold
+after 2014 relative to the pre-2014 period (), and we assign control status to counties 
+
+$$
+\text{price}_{c,t} = \beta\cdot\text{Z}_{c} +  \delta\cdot\text{Z}_c\cdot P_t+ D_d + T_t +\gamma\cdot\text{Unemp}_{c,t} + \zeta\cdot\text{HC}_{c,t} + \epsilon_{c,t}
+$$
+
+\textbf{Variable Descriptions:}
+\begin{itemize}
+\item $\text{price}_{c,t}$ (\textit{numeric variable}): The Zillow Home Value Index 
+value, a smoothed indicator of housing prices in county $d$ and time period $t$.
+\item $\Delta\text{Z}_{c,t}$ (\textit{dummy variable}): A treatment variable
+determined from the smoke score, which is computed above
+is a dummy variable which turns on after the treatment begins in 
+counties which receive increased average wildfire smoke in the post-treatment
+period.  In extensions of this model, I will use multiple dummies depending on 
+the level of smoke change compared with the pre-treatment time period
+estimating different coefficients for these different levels, dividing up the 
+treated groups into buckets depending on how much treatment is received (see below
+for a discussion of robustness).  
+\item $D_c$ (\textit{dummy variable}): A set of dummy variables for the county
+fixed effects of the regression.  
+\item $T_t$ (\textit{dummy variable}): A set of dummies for the time fixed 
+effects
+\item 
+\end{itemize}
+
+
+## Further Models
+
+One extension that I am still setting up is the instrumental variables model,
+which uses smoke treatment level instrument for Air Quality Index (AQI) in the 
+first stage model, then estimates the causal effect of air quality on housing
+prices in the second stage model.  
+
+Since my treatment variable has differing dosage levels, I am looking into the 
+literature on estimating Two-Way Fixed Effects models in order to fully utilize
+the granularity of my data.  
+
+## Robustness checks:
+There are a number of robustness checks that remain to be done for my paper.  The
+first and most important will be parallel trends for the difference in differences
+estimation strategy.  Checking that ZHVI trends do not differ significantly 
+Check robustness of aggregation strategy -- smoke data was population weighted,
+perhaps
+
+Check robustness of year selection.  
+
+Check 
+
+# Visualization for Smoke Data
+
+Check Parallel Trends Assumption
+
+
+# Data Visualizations for Housing Prices
+
+##Data Source
+
+"Zillow Home Value Index (ZVHI): smoothed, seasonally adjusted measure
+of the typical home value and market changes across a given region and housing type. 
+It reflects the typical value for homes in the 35th to 65th percentile range.
+The raw version of that mid-tier ZHVI time series is also available." (zillow.com)
+
+I am currently working with the smoothed version, but it will be easy to repeat
+the same analysis with the unsmoothed version for robustness.  I am using this
+dataset because it has high coverage and a high frequency reporting rate (monthly). 
+For yearly housing prices, there are other data sources such as the American 
+Community Survey.
+
+\pagebreak
+
+## Examining Coverage by Year
+The first plot shows the proportion of counties with ZHVI values by starting year. 
+Since I plan to start my analysis in 2010 (because it is the first year for which
+I could obtain smoke data), it is good that the coverage rate is high by 2010, 
+with around 90% of in-sample counties covered by the dataset.  (Here, I use "coverage" to indicate the proportion of periods for which the time series has values.)
+
+```{r}
+#read in data
+setwd("/Users/tristanmisko/Documents/Berkeley/ECON/191/2021/Data")
+zhvi <- read.csv("Clean\ Data/zhvi_clean.csv",
+                 colClasses = c("fips" = "character",
+                                "StateCodeFIPS" = "character",
+                                "MunicipalCodeFIPS" = "character"))
+# visualizing coverage by starting year
+cg_1996 <- zhvi %>% group_by(fips) %>%
+    summarize(mu = mean(zhvi.score),
+              sd = sd(zhvi.score),
+              cg = 1 - sum(is.na(zhvi.score))/307)
+cg_2000 <- zhvi %>% filter(year >= 2000) %>% group_by(fips) %>%
+    summarize(mu = mean(zhvi.score),
+              sd = sd(zhvi.score),
+              cg = 1 - sum(is.na(zhvi.score))/307)
+cg_2005 <- zhvi %>% filter(year >= 2005) %>% group_by(fips) %>%
+    summarize(mu = mean(zhvi.score),
+              sd = sd(zhvi.score),
+              cg = 1 - sum(is.na(zhvi.score))/307)
+cg_2010 <- zhvi %>% filter(year >= 2010) %>% group_by(fips) %>%
+    summarize(mu = mean(zhvi.score),
+              sd = sd(zhvi.score),
+              cg = 1 - sum(is.na(zhvi.score))/307)
+
+# plot proportion of dataset with x proportion coverage
+cg_percent <- Vectorize(function(x, df){sum(df$cg >= x)/length(df$cg)}, "x")
+ggplot(data.frame(xx = seq(0,1,b=0.01),
+                  cg1996 = cg_percent(seq(0,1,b=0.01), cg_1996),
+                  cg2000 = cg_percent(seq(0,1,b=0.01), cg_2000),
+                  cg2005 = cg_percent(seq(0,1,b=0.01), cg_2005),
+                  cg2010 = cg_percent(seq(0,1,b=0.01), cg_2010))) + 
+    geom_line(aes(x = xx, y = cg1996, color = "1996")) +
+    geom_line(aes(x = xx, y = cg2000, color = "2000")) +
+    geom_line(aes(x = xx, y = cg2005, color = "2005")) +
+    geom_line(aes(x = xx, y = cg2010, color = "2010")) +
+    labs(title = "ZHVI Data Coverage Proportion, Starting Year to 2021",
+         col = "Starting Year") +
+    xlab("Coverage Proportion (1 - Proportion of NA Values)") +
+    ylab("Proportion of Counties with Coverage Level x") +
+    ylim(0,1.005)
+```
+\pagebreak
+
+## Geographic Coverage
+
+Constraining my sample to those counties with full coverage, we get a geographic
+picture of which counties are represented in the data.  Almost all of the missing
+counties are rural and sparsely populated.
+
+```{r, echo = F}
+zhvi_fcg <- zhvi %>%
+    filter(!as.logical(zhvi$fips %in% filter(cg_2010, cg < 1)$fips)) %>%
+    filter(year >= 2010)
+zhvi_fcg$period <- zhvi_fcg$period - min(zhvi_fcg$period)
+
+plot_usmap(regions = "counties", fill = "blue",
+           include = unique(zhvi_fcg$fips)) +
+    labs(title = "Counties with Full ZHVI Timeseries, 2010 to 2021",
+         subtitle = "Full Coverage for 2512 out of 3006 US Counties")
+```
+\pagebreak
+
+## Evolution of Means
+To get a sense of the evolution of the ZHVI over time, we plot the state means
+by month. (Here, state means are taken to be the period mean over full coverage
+counties within each state.) Most state means seem to follow a similar trend,
+which gives some hope that we will be able to argue for parallel trends 
+with some force.
+
+
+```{r, echo = F, message = F}
+state_means <- zhvi_fcg %>% group_by(StateCodeFIPS, period) %>%
+    summarize(mu = mean(zhvi.score))
+us_means <- zhvi_fcg %>% group_by(period) %>%
+    summarize(usmu = mean(zhvi.score),
+              q10 = quantile(zhvi.score, 0.1),
+              q90 = quantile(zhvi.score, 0.9))
+    
+plt.means <- ggplot(NULL, aes(x = period)) 
+for (statefips in unique(state_means$StateCodeFIPS)){
+    plt.means <- plt.means +
+        geom_line(data = filter(state_means, StateCodeFIPS == statefips),
+                  aes(y = mu), col = "lightgrey")
+}
+plt.means + 
+    geom_line(data = us_means, aes(y = usmu), col = "darkblue") +
+    geom_line(data = us_means, aes(y = q10), col = "darkblue", linetype = "dashed") + 
+    geom_line(data = us_means, aes(y = q90), col = "darkblue", linetype = "dashed") +
+    labs(title = "Monthly State Mean ZHVI, 2010 to 2021",
+         subtitle = "80% of State Means Lie Between the Dashed Lines") + 
+    xlab("Month (January 2010 == 0)") +
+    ylab("Mean ZHVI")
+```
+
+# Smoke Data Description
+
+## Data Source
+
+"This is a data set of United States population and wildland fire smoke spatial and temporal coincidence beginning in 2010 and continuing through 2019. It combines data from the National Oceanic and Atmospheric Administration (NOAA) Office of Satellite and Product Operations Hazard Mapping System’s Smoke Product (HMS-Smoke) with U.S. Census Block Group Population Centers to estimate a potential exposure to light, medium, and heavy categories of wildfire smoke.The data represents a modest advancement of NOAA's HMS-Smoke product, with the aims of spurring additional work on the impacts of wildfire smoke on the health of US Populations. Namely, these should include tracking potential wildfire smoke exposures to identify areas and times most heavily impacted by smoke, adding potential smoke exposures to population characteristics describing the social determinants of health in order to better distribute resources and contextualize public health messages and interventions, and combining information specific to wildfire smoke with other air pollution data to better isolate and understand the contribution of wildfires to poor health. (2020-02-24)" (Vargo, 2020)
+
+The standard source for US wildfire smoke data is NOAA's HMS-Smoke dataset.  These
+data are geographic shapefiles encoding the location and intensity of smoke plumes
+across the United States generated from satellite imagery.  Vargo processes these data 
+by intersecting the smoke plume shapefiles with shapefiles at the census block 
+group level (lower than the county level) and produces dummies which indicate
+smoke exposure at light, medium, and heavy levels for each day in each block group.
+The raw dataset is incredibly rich, with over 59,000,000 observations.  Vargo's
+dataset only includes observations which have nonzero values, so aggregating
+to the county level requires use of an auxiliary block group dataset from the 
+2010 Census to determine how much exposure is received on a population weighted
+basis.
+
+# AQI Data
+
+AQI level is reported at the county level by the EPA for each day for which data
+is available.  Examination of the data coverage is still in progress, but my
+rough impression is that data coverage will not be a binding constraint for
+the 2010 to 2019 period. 

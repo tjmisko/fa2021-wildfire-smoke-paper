@@ -1,0 +1,18 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Relationship to the Literature}{}% 2
+\BOOKMARK [1][-]{section.3}{Data}{}% 3
+\BOOKMARK [2][-]{subsection.3.1}{Wildfire Smoke}{section.3}% 4
+\BOOKMARK [2][-]{subsection.3.2}{Zillow Home Value Index}{section.3}% 5
+\BOOKMARK [2][-]{subsection.3.3}{Variable Descriptions}{section.3}% 6
+\BOOKMARK [1][-]{section.4}{Models}{}% 7
+\BOOKMARK [2][-]{subsection.4.1}{Modeling Assumptions}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.2}{Model Specifications}{section.4}% 9
+\BOOKMARK [1][-]{section.5}{Main Results}{}% 10
+\BOOKMARK [2][-]{subsection.5.1}{OLS Model}{section.5}% 11
+\BOOKMARK [2][-]{subsection.5.2}{Treatment/Control Model}{section.5}% 12
+\BOOKMARK [2][-]{subsection.5.3}{Buckets Model}{section.5}% 13
+\BOOKMARK [1][-]{section.6}{Robustness Checks}{}% 14
+\BOOKMARK [2][-]{subsection.6.1}{Parallel Trends}{section.6}% 15
+\BOOKMARK [2][-]{subsection.6.2}{Percent Change Threshold for Treatment/Control Model:}{section.6}% 16
+\BOOKMARK [2][-]{subsection.6.3}{Treatment Start Time:}{section.6}% 17
+\BOOKMARK [1][-]{section.7}{Conclusion}{}% 18

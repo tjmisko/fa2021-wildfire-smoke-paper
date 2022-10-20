@@ -1,0 +1,134 @@
+\documentclass[12pt]{article}
+\title{\vspace{-2cm}\Large{Do Homeowners Care About Air Quality? Estimating the Effect of Poor Air Quality on Home Prices Using Wildfire Smoke Data}\\ \vspace{0.1cm}{\large\textit{Research Proposal}}} 
+\author{\normalsize Tristan Misko}
+\date{\normalsize{7 October 2021}}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathrsfs}
+\usepackage{amssymb}
+\usepackage{yfonts}
+\usepackage{bbm}
+\usepackage[margin=1 in]{geometry}
+
+\let\biconditional\longleftrightarrow
+\let\iff\Leftrightarrow
+\let\implies\Rightarrow
+\let\infinity\infty
+\let\by\times
+\let\iso\cong
+\let\unif\rightrightarrows
+\DeclareRobustCommand{\Z}{\mathbb Z}
+\DeclareRobustCommand{\hom}{\text{Hom}\,(\Z,G)}
+\DeclareRobustCommand{\N}{\mathbb N}
+\DeclareRobustCommand{\R}{\mathbb R}
+\DeclareRobustCommand{\C}{\mathbb C}
+\DeclareRobustCommand{\Q}{\mathbb Q}
+\DeclareRobustCommand{\E}{\mathbb E}
+\DeclareRobustCommand{\P}{\mathbb P}
+\DeclareRobustCommand{\tr}{\text{tr}}
+\DeclareRobustCommand{\norm}{\mathrel{\unlhd}}
+\DeclareRobustCommand{\contains}{\supset}
+\DeclareRobustCommand{\lcm}{\text{lcm}}
+\DeclareRobustCommand{\glnr}{GL(n,\R)}
+\DeclareRobustCommand{\limit}{\lim_{n\to\infinity}}
+\DeclareRobustCommand{\nti}{{n\to\infinity}}
+\DeclareRobustCommand{\del}{\partial}
+\DeclareRobustCommand{\graph}{\text{graph}\,}
+\DeclareRobustCommand{\interior}{\text{int}\,}
+\DeclareRobustCommand{\Var}{\text{Var}}
+\DeclareRobustCommand{\Cov}{\text{Cov}}
+\DeclareRobustCommand{\normal}{\mathcal N}
+\DeclareRobustCommand{\Bar}{\overline}
+
+\usepackage{titlesec}
+\titleformat*{\section}{\normalsize\bfseries}
+\titleformat*{\subsection}{\normalsize\bfseries}
+\titleformat*{\subsubsection}{\normalsize\bfseries}
+\titleformat*{\paragraph}{\normalsize\bfseries}
+\titleformat*{\subparagraph}{\large\bfseries}
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\usepackage{cancel}
+
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usetikzlibrary{patterns}
+\usetikzlibrary{calc}
+\usepgfplotslibrary{polar}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Tristan Misko}
+\rhead{\small{ECON 191}}
+\cfoot{\thepage}
+
+\usepackage{mathrsfs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{setspace}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=R,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=4
+}
+
+\begin{document}
+	\maketitle
+	\doublespacing
+
+\section*{Research Question} Do decreases in air quality from wildfire smoke decrease housing prices? 
+
+%In particular, how do households assess local air quality and incorporate that information into housing prices?  What is the timescale and time-structure of air quality responses?  Do prices respond to changes in historical air quality? Do they respond to expectations of future air quality trends?  Do streaks of bad air quality on a monthly timescale cause dips in housing prices which then recover (this could be used for arbitrage in the housing market if the dips are indeed transient).
+	
+\section*{Why Does Air Quality Matter?} Ambient outdoor air quality is a significant determinant of health and wellbeing.  An extensive literature exists linking poor air quality to poor health outcomes, including ``heart disease, strokes, lung cancer, chronic obstructive pulmonary disease, and respiratory infections.'' (Apte et al., 2009).  Correia et al. estimate that a ``decrease of 10 $\frac{\mu g}{m^3}$ in the concentration of PM2.5 [is] associated with an increase in mean life expectancy of 0.35 years'' in the United States, with stronger effects in densely populated areas (Correia et al.).  Such large health effects would suggest that air quality, which is locationally dependent, should be a major determinant of the desirability of living in a particular location, and thus should have a significant effect on the price of housing in that location.  
+
+To the contrary, the behavioral economics literature suggests that humans often fail to value risk effectively when risks are small and the potential consequences are far off, as in the case of the potential negative health effects of marginally worse air quality on health.  Other factors such as job opportunities, school quality, and idiosyncratic locational preferences may overwhelm considerations about air quality when purchasing housing. If housing prices do not respond strongly to air quality changes, then housing markets may be failing to price an amenity with significant health and quality of life implications for residents.  
+
+%Overall, I expect to find a null or quite small effect of air quality on housing prices.  My expectation is shaped by the aforementioned results from behavioral economics as well as anecdotal data from speaking with a number of homeowners in my private life.  The existing literature on the causal effect of air quality on housing prices suggests an elasticity much less than one, pointing to relatively small effects also.  
+
+\section*{Preliminary Review of the Literature} In the context of valuing air quality, a spacial hedonic model is estimated by constructing a price function via linear or semi-log regression with covariates for various housing, neighborhood, environmental, and locational covariates (Anselin and Lozano-Gracia).  Anselin and Lozano-Gracia provide a detailed and well-referenced summary of the framework and estimation strategies associated with these models as well as a discussion of the methodological challenges that spacial hedonic models present.  Osland offers further methodological considerations (Osland, 2010).  
+
+A number of causal estimates exist for the effect of air quality on housing prices, most of which deploy spacial hedonic models.  A 2005 paper by Chay and Greenstone uses a regression discontinuity design based on a United States Clean Air Act policy which implemented stricter regulations on counties which failed to meet pre-specified particulate pollution targets.  They estimate that a 1\% increase in particulate matter pollution concentration decreases home values by approximately 0.2\% to 0.35\% (Chay and Greenstone).  Chay and Greenstone's study focuses on local interventions to increase air quality, which is quite different from the goal of my proposed project, which focuses on air pollution resulting from wildfires remote from the site of the experienced pollution.  Kim et al. use a spacial hedonic approach at a very local level to estimate the effects of air pollution on housing prices in Seoul, South Korea, associating a 4\% air quality increase with a 1.4\% housing price increase (Kim et al.).  Zabel and Kiel employ a similar strategy in four U.S. cities and find a small, significant negative relationship between air pollution and housing prices in two of them (Zabel and Kiel, 2000).  
+
+\section*{Data and Definitions} The main covariate of interest is air quality, which can be summarized by the Air Quality Index (AQI). United States EPA has a vast repository of air quality data identified at the county level.  For most counties in the US, there exists daily air quality data from the 1990s onward.  These data record the daily AQI and report the levels of PM2.5, PM10, and a number of other common air pollutants.
+
+The response variable of interest is the price of housing, which can be identified at the county level and at the individual unit level.  The American Community Survey has an extensive database which contains housing price data as well as covariates of interest (demographic information, housing stock characteristics, etc.) on an annual basis.  Zillow provides datasets on housing prices which on a monthly basis and is also available at the county, zip code, and unit level.  
+
+\section*{Model and Research Design} I plan to use wildfire smoke as a source of exogenous variation in air quality when estimating a spacial hedonic model for housing prices as a function of air quality and other covariates.  The United States has been experiencing a large increase in the number of acres burned by wildfires since the mid 1980s, with 2015, 2017, and 2020 exceeding ten million acres burned (Burke et al., 2021).  Wildfire smoke contains a number of harmful pollutants which can be carried for thousands of miles in the air.  Since large scale flows of air parcels across the United States determine where the smoke falls, wildfire smoke can produce variation in air quality in far off places, acting as a source of exogenous variation.  There is a significant amount of spacial and temporal heterogeneity across the US in the number of days in which counties receive wildfire smoke (\textit{ibid.}).  Using this variation in air quality, I plan to estimate the causal effect of air quality on housing prices via a difference-in-differences model.
+
+Using wildfire smoke as a source of variation to estimate the effect of air quality on home prices is a novel estimation strategy as far as I can tell.  Moreover, in the context of climate change, understanding how homeowners respond to changes in air quality generated by wildfire smoke will become increasingly relevant as drier conditions in the American West contribute to increasing amounts of air pollution from fire.  
+
+
+
+\end{document}
+
+

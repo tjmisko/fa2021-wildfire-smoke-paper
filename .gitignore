@@ -1,0 +1,9 @@
+Data/Raw\ Data/**
+
+Data/Clean\ Data/**
+
+Data/.RData
+
+.RData
+
+.Rhistory

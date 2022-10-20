@@ -1,0 +1,303 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage[]{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\PassOptionsToPackage{hyphens}{url} % url is loaded by hyperref
+\usepackage[unicode=true]{hyperref}
+\hypersetup{
+            pdftitle={Model and Data},
+            pdfauthor={Tristan Misko},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+-\usepackage{setspace}\doublespacing
+
+\title{Model and Data}
+\author{Tristan Misko}
+\date{11/17/2021}
+
+\begin{document}
+\maketitle
+
+\section{Model and Design}\label{model-and-design}
+
+\doublespacing
+The main idea of the paper is to determine whether housing prices
+respond to changes to in air quality. The naive regression of housing
+prices on air quality may suffer from significant endogeneity. If people
+respond to air quality, then it is likely that taste-based sorting
+occurs, producing a selection bias.
+
+To overcome endogeneity, we use wildfire smoke as an instrumental
+variable for air quality to obtain plausibly exogenous variation, and we
+obtain causal estimates by comparing places which receive increases in
+wildfire smoke over a given period to those which do not.
+
+The main question, whether there is a response in housing prices to
+changes in air quality, leaves unspecified the timescale over which the
+response occurs. As such, I plan to look at both the monthly and the
+yearly timescales. Do housing prices dip after a few months of
+relatively poor air quality? A few years?
+
+\section{Description of Data}\label{description-of-data}
+
+\subsection{Summary of Data Structure}\label{summary-of-data-structure}
+
+The data take the form of panel data, with monthly obervations at the
+county level of the number of days in each month in which the county is
+covered by wildfire smoke plumes, the mean air quality index (AQI) over
+the month, and the level of the Zillow housing price index in that
+month. I also have associated to each observation a set of controls for
+unemployment level and housing characteristics. The data ranges from
+June 2010 to July 2019 and contains counties outside of the geographic
+west of the United States (such counties may suffer potentially
+significant confouding from wildfires themselves). I am currently
+working on expanding the smoke dataset to include all months in 2019 and
+2020. All other sources have data for those periods.
+
+\subsection{Smoke Data}\label{smoke-data}
+
+The smoke data, in the form of dummies for exposure to light, medium,
+and heavy wildfire smoke, are reported by Vargo at the census block and
+daily level, so both spatial and temporal aggregation was necessary in
+order to bring the data up to the county and monthly level. A number of
+nontrivial decisions were made in the aggregation process which require
+validation via robustness checks.
+
+First, we grouped at the county level and computed a population-weighted
+``dummy'' which takes values on the interval {[}0,1{]} for smoke
+exposure in each of the three intensity categories within a county on a
+given day. For example, a value of 0.5 for the \texttt{light} would
+indicate that 50\% of the county's population was exposed to light
+wildfire smoke on a given day.
+
+We then aggregated to the monthly level by grouping observations by
+month and summing the population weighted county level smoke exposure
+indicators to obtain a ``number'' of days of smoke exposure at the
+light, medium, and heavy levels. This number is continuously valued
+because of the above weighting scheme but is bounded by the number of
+days in the month.
+
+Finally, we summarize across the light, medium, and heavy levels by
+computing the variable \texttt{smoke\_score}. There is a fairly natural
+weighting scheme for aggregation. NOAA defines plumes with density 0-10
+\(\mu g/m^3\) as light, 10-21 \(\mu g/m^3\) as medium, and
+\(>22\mu g/m^3\) as heavy, so computing the weighted sum
+\texttt{smoke\_score\ =\ 5*light\ +\ 15*medium\ +\ 25*heavy} gives a
+rough measure of the total density of smoke exposure over a given month
+for a given county.
+
+To ensure that such choices are empirically valid, extensive robustness
+testing including variation of all weighting schemes will be employed to
+ensure that results do not depend too heavily on arbitrary decisions.
+
+\section{Empirical Strategy}\label{empirical-strategy}
+
+\subsection{Basic Model}\label{basic-model}
+
+A county is categorized as treated if its post-2014 mean smoke score
+produce a dummy which is one if wildfire smoke increased beyond a given
+threshold after 2014 relative to the pre-2014 period (), and we assign
+control status to counties
+
+\[
+\text{price}_{c,t} = \beta\cdot\text{Z}_{c} +  \delta\cdot\text{Z}_c\cdot P_t+ D_d + T_t +\gamma\cdot\text{Unemp}_{c,t} + \zeta\cdot\text{HC}_{c,t} + \epsilon_{c,t}
+\]
+
+\textbf{Variable Descriptions:}
+
+\begin{itemize}
+\item $\text{price}_{c,t}$ (\textit{numeric variable}): The Zillow Home Value Index 
+value, a smoothed indicator of housing prices in county $d$ and time period $t$.
+\item $\Delta\text{Z}_{c,t}$ (\textit{dummy variable}): A treatment variable
+determined from the smoke score, which is computed above
+is a dummy variable which turns on after the treatment begins in 
+counties which receive increased average wildfire smoke in the post-treatment
+period.  In extensions of this model, I will use multiple dummies depending on 
+the level of smoke change compared with the pre-treatment time period
+estimating different coefficients for these different levels, dividing up the 
+treated groups into buckets depending on how much treatment is received (see below
+for a discussion of robustness).  
+\item $D_c$ (\textit{dummy variable}): A set of dummy variables for the county
+fixed effects of the regression.  
+\item $T_t$ (\textit{dummy variable}): A set of dummies for the time fixed 
+effects
+\item 
+\end{itemize}
+
+\subsection{Further Models}\label{further-models}
+
+One extension that I am still setting up is the instrumental variables
+model, which uses smoke treatment level instrument for Air Quality Index
+(AQI) in the first stage model, then estimates the causal effect of air
+quality on housing prices in the second stage model.
+
+Since my treatment variable has differing dosage levels, I am looking
+into the literature on estimating Two-Way Fixed Effects models in order
+to fully utilize the granularity of my data.
+
+\subsection{Robustness checks:}\label{robustness-checks}
+
+There are a number of robustness checks that remain to be done for my
+paper. The first and most important will be parallel trends for the
+difference in differences estimation strategy. Checking that ZHVI trends
+do not differ significantly Check robustness of aggregation strategy --
+smoke data was population weighted, perhaps
+
+Check robustness of year selection.
+
+Check
+
+\section{Visualization for Smoke
+Data}\label{visualization-for-smoke-data}
+
+Check Parallel Trends Assumption
+
+\section{Data Visualizations for Housing
+Prices}\label{data-visualizations-for-housing-prices}
+
+\subsection{Data Source}\label{data-source}
+
+``Zillow Home Value Index (ZVHI): smoothed, seasonally adjusted measure
+of the typical home value and market changes across a given region and
+housing type. It reflects the typical value for homes in the 35th to
+65th percentile range. The raw version of that mid-tier ZHVI time series
+is also available.'' (zillow.com)
+
+I am currently working with the smoothed version, but it will be easy to
+repeat the same analysis with the unsmoothed version for robustness. I
+am using this dataset because it has high coverage and a high frequency
+reporting rate (monthly). For yearly housing prices, there are other
+data sources such as the American Community Survey.
+
+\pagebreak
+
+\subsection{Examining Coverage by
+Year}\label{examining-coverage-by-year}
+
+The first plot shows the proportion of counties with ZHVI values by
+starting year. Since I plan to start my analysis in 2010 (because it is
+the first year for which I could obtain smoke data), it is good that the
+coverage rate is high by 2010, with around 90\% of in-sample counties
+covered by the dataset. (Here, I use ``coverage'' to indicate the
+proportion of periods for which the time series has values.)
+
+\includegraphics{2021-11-12-Meeting-Notes_files/figure-latex/unnamed-chunk-1-1.pdf}
+\pagebreak
+
+\subsection{Geographic Coverage}\label{geographic-coverage}
+
+Constraining my sample to those counties with full coverage, we get a
+geographic picture of which counties are represented in the data. Almost
+all of the missing counties are rural and sparsely populated.
+
+\includegraphics{2021-11-12-Meeting-Notes_files/figure-latex/unnamed-chunk-2-1.pdf}
+\pagebreak
+
+\subsection{Evolution of Means}\label{evolution-of-means}
+
+To get a sense of the evolution of the ZHVI over time, we plot the state
+means by month. (Here, state means are taken to be the period mean over
+full coverage counties within each state.) Most state means seem to
+follow a similar trend, which gives some hope that we will be able to
+argue for parallel trends with some force.
+
+\includegraphics{2021-11-12-Meeting-Notes_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\section{Smoke Data Description}\label{smoke-data-description}
+
+\subsection{Data Source}\label{data-source-1}
+
+``This is a data set of United States population and wildland fire smoke
+spatial and temporal coincidence beginning in 2010 and continuing
+through 2019. It combines data from the National Oceanic and Atmospheric
+Administration (NOAA) Office of Satellite and Product Operations Hazard
+Mapping System's Smoke Product (HMS-Smoke) with U.S. Census Block Group
+Population Centers to estimate a potential exposure to light, medium,
+and heavy categories of wildfire smoke.The data represents a modest
+advancement of NOAA's HMS-Smoke product, with the aims of spurring
+additional work on the impacts of wildfire smoke on the health of US
+Populations. Namely, these should include tracking potential wildfire
+smoke exposures to identify areas and times most heavily impacted by
+smoke, adding potential smoke exposures to population characteristics
+describing the social determinants of health in order to better
+distribute resources and contextualize public health messages and
+interventions, and combining information specific to wildfire smoke with
+other air pollution data to better isolate and understand the
+contribution of wildfires to poor health. (2020-02-24)'' (Vargo, 2020)
+
+The standard source for US wildfire smoke data is NOAA's HMS-Smoke
+dataset. These data are geographic shapefiles encoding the location and
+intensity of smoke plumes across the United States generated from
+satellite imagery. Vargo processes these data by intersecting the smoke
+plume shapefiles with shapefiles at the census block group level (lower
+than the county level) and produces dummies which indicate smoke
+exposure at light, medium, and heavy levels for each day in each block
+group. The raw dataset is incredibly rich, with over 59,000,000
+observations. Vargo's dataset only includes observations which have
+nonzero values, so aggregating to the county level requires use of an
+auxiliary block group dataset from the 2010 Census to determine how much
+exposure is received on a population weighted basis.
+
+\section{AQI Data}\label{aqi-data}
+
+AQI level is reported at the county level by the EPA for each day for
+which data is available. Examination of the data coverage is still in
+progress, but my rough impression is that data coverage will not be a
+binding constraint for the 2010 to 2019 period.
+
+\end{document}
